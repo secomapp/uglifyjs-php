@@ -1,4 +1,5 @@
-me": "cadicvnn/shopify-php",
+{
+"name": "secomapp/shopify-php",
   "type": "library",
   "description": "Using UglifyJS as a service for JavaScript minification in PHP",
   "keywords": ["uglifyjs","api"],
