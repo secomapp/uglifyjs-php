@@ -1,5 +1,5 @@
 {
-"name": "secomapp/shopify-php",
+"name": "secomapp/uglifyjs-php",
   "type": "library",
   "description": "Using UglifyJS as a service for JavaScript minification in PHP",
   "keywords": ["uglifyjs","api"],
