@@ -1,47 +1,26 @@
 <?php
 /**
  * PHP class for JavaScript minification  using UglifyJS as a service.
- * https://github.com/makesites/uglifyjs-php
  *
- * Created by Makis Tracend (@tracend)
+ * Created by Makis Tracend (@tracend), Cadicvnn
  * Distributed through [Makesites.org](http://makesites.org/)
  * Released under the [Apache License v2.0](http://makesites.org/licenses/APACHE-2.0)
  */
 class UglifyJS {
 
-	var $_srcs = array();
-	var $_mode = "WHITESPACE_ONLY";
-	var $_warning_level = "DEFAULT";
-	var $_pretty_print = false;
-	var $_debug = true;
-	var $_cache_dir = "";
-	var $_code_url_prefix = "";
-	var $_compiler = array(
+	private $_mode = "WHITESPACE_ONLY";
+	private $_warning_level = "DEFAULT";
+	private $_pretty_print = false;
+	private $_debug = true;
+	private $_compiler = array(
 		"host" => "marijnhaverbeke.nl",
 		"port" => "80",
 		"path" => "/uglifyjs"
 	);
 
-	function UglifyJS() { }
+	public function __construct() {}
 
-	/**
-	 * Adds a source file to the list of files to compile. Files will be
-	 * concatenated in the order they are added.
-	 */
-	function add($file) {
-		$this->_srcs[] = $file;
-		return $this;
-	}
-
-	/**
-	 * Sets the directory where the compilation results should be cached
-	 */
-	function cacheDir($dir) {
-		$this->_cache_dir = $dir;
-		return $this;
-	}
-
-	function compiler( $string ) {
+	public function compiler( $string ) {
 		// get the previous compiler
 		$compiler = $this->_compiler;
 		$url = parse_url( $string );
@@ -52,34 +31,6 @@ class UglifyJS {
 		// save back the compiler
 		$this->_compiler = $compiler;
 		return $compiler;
-	}
-
-	function setFile( $name=false ) {
-		if($name) $this->_file = $name;
-		return $this;
-	}
-	/**
-	 * Sets the URL prefix to use with the UglifyJS service's code_url
-	 * parameter.
-	 *
-	 * Using code_url tells the compiler service the URLs of the scripts to
-	 * fetch. The file paths added in add() must therefore be relative to this
-	 * URL.
-	 *
-	 * Example usage:
-	 *
-	 * $c->add("js/my-app.js")
-	 *   ->add("js/popup.js")
-	 *   ->useCodeUrl('http://www.example.com/app/')
-	 *   ->cacheDir("/tmp/js-cache/")
-	 *   ->write();
-	 *
-	 * This assumes your PHP script is in a directory /app/ and that the JS is in
-	 * /app/js/ and accessible via HTTP.
-	 */
-	function useCodeUrl($code_url_prefix) {
-		$this->_code_url_prefix = $code_url_prefix;
-		return $this;
 	}
 
 	/**
@@ -159,93 +110,29 @@ class UglifyJS {
 	}
 
 	/**
-	 * Writes the compiled response.  Reading from either the cache, or
-	 * invoking a recompile, if necessary.
+	 * Writes the compiled response.
 	 */
-	function write( $output=false ) {
-
-		// No cache directory so just dump the output.
-		if ($this->_cache_dir == "") {
-			echo $this->_compile();
-
-		} else {
-			$cache_file = $this->_getCacheFileName();
-			if ($this->_isRecompileNeeded($cache_file)) {
-				$result = $this->_compile();
-				file_put_contents($cache_file, $result);
-				if( $output ){
-					echo $result;
-				}
-			} else {
-				// No recompile needed, but see if we need to output the cached file.
-				if( $output ){
-					// Read the cache file and send it to the client.
-					echo file_get_contents($cache_file);
-				}
-			}
-		}
+	function write( $js ) {
+		return $this->_compile( $js );
 	}
 
-	// ----- Privates -----
-
-	function _isRecompileNeeded($cache_file) {
-		// If there is no cache file, we obviously need to recompile.
-		if (!file_exists($cache_file)) return true;
-
-		$cache_mtime = filemtime($cache_file);
-
-		// If the source files are newer than the cache file, recompile.
-		foreach ($this->_srcs as $src) {
-			if (filemtime($src) > $cache_mtime) return true;
-		}
-
-		// If this script calling the compiler is newer than the cache file,
-		// recompile.  Note, this might not be accurate if the file doing the
-		// compilation is loaded via an include().
-		if (filemtime($_SERVER["SCRIPT_FILENAME"]) > $cache_mtime) return true;
-
-		// Cache is up to date.
-		return false;
-	}
-
-	function _compile() {
+	function _compile( $js ) {
 		// No debug info?
-		$result = $this->_makeRequest();
+		$result = $this->_makeRequest( $js );
 		return $result;
 	}
 
-	function _getCacheFileName() {
-		return ( empty($this->_file) ) ? $this->_cache_dir . $this->_getHash() . ".js" : $this->_cache_dir . $this->_file. ".js";
-	}
-
-	function _getHash() {
-		return md5(implode(",", $this->_srcs) . "-" .
-				$this->_mode . "-" .
-				$this->_warning_level . "-" .
-				$this->_pretty_print . "-" .
-				$this->_debug);
-	}
-
-	function _getParams() {
+	function _getParams( $js ) {
 		$params = array();
-		foreach ($this->_getParamList() as $key => $value) {
+		foreach ($this->_getParamList( $js ) as $key => $value) {
 			$params[] = preg_replace("/_[0-9]$/", "", $key) . "=" . urlencode($value);
 		}
 		return implode("&", $params);
 	}
 
-	function _getParamList() {
+	function _getParamList( $js ) {
 		$params = array();
-		if ($this->_code_url_prefix) {
-			// Send the URL to each source file instead of the raw source.
-			$i = 0;
-			foreach($this->_srcs as $file){
-				$params["code_url_$i"] = $this->_code_url_prefix . $file;
-				$i++;
-			}
-		} else {
-			$params["js_code"] = $this->_readSources();
-		}
+		$params["js_code"] = $js;
 		$params["compilation_level"] = $this->_mode;
 		$params["output_format"] = "xml";
 		$params["warning_level"] = $this->_warning_level;
@@ -257,16 +144,8 @@ class UglifyJS {
 		return $params;
 	}
 
-	function _readSources() {
-		$code = "";
-		foreach ($this->_srcs as $src) {
-			$code .= file_get_contents($src) . "\n\n";
-		}
-		return $code;
-	}
-
-	function _makeRequest() {
-		$data = $this->_getParams();
+	function _makeRequest( $js ) {
+		$data = $this->_getParams( $js );
 		$referer = @$_SERVER["HTTP_REFERER"] or "";
 		// variables
 		extract($this->_compiler);
