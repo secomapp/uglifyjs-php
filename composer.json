@@ -1,0 +1,29 @@
+me": "cadicvnn/shopify-php",
+  "type": "library",
+  "description": "Using UglifyJS as a service for JavaScript minification in PHP",
+  "keywords": ["uglifyjs","api"],
+  "homepage": "https://github.com/secomapp/uglifyjs-php",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Cadic",
+      "role": "Developer"
+    },
+    {
+      "name": "makesites",
+      "homepage": "https://github.com/makesites/uglifyjs-php",
+      "role": "Developer"
+    },
+  ],
+  "require": {
+    "php": ">=5.3.0",
+  },
+  "require-dev": {
+  },
+  "suggest": {
+  },
+  "autoload": {
+    "psr-0": {
+    }
+  }
+}
